@@ -3,163 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>X-DYNAMIC // HUD v2.6</title>
+    <title>X-DYNAMIC HUD // PWA</title>
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlgtRFlOQU1JQyIsCiAgInNob3J0X25hbWUiOiAiWC1EWU4iLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzA1MDUwNSIsCiAgInRoZW1lX2NvbG9yIjogIzM5ZmYxNCIKfQ==">
     <style>
-        :root {
-            --neon-green: #39ff14;
-            --dark-bg: #050505;
-            --lime-fire: #ccff00;
-            --alert-red: #ff003c;
-            --border-glow: 0 0 10px rgba(57, 255, 20, 0.5);
-        }
-
-        body {
-            background-color: var(--dark-bg);
-            color: var(--neon-green);
-            font-family: 'Courier New', Courier, monospace;
-            margin: 0; padding: 20px;
-            display: flex; flex-direction: column; align-items: center;
-        }
-
-        body::before {
-            content: " "; display: block; position: fixed;
-            top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 100; background-size: 100% 2px, 3px 100%; pointer-events: none;
-        }
-
-        .header {
-            width: 100%; max-width: 600px;
-            border: 1px solid var(--neon-green); padding: 10px;
-            text-align: center; box-shadow: var(--border-glow); margin-bottom: 20px;
-        }
-
-        .hud-container { width: 100%; max-width: 600px; display: grid; gap: 15px; }
-
-        .module {
-            border: 1px solid var(--neon-green); padding: 15px;
-            background: rgba(0, 0, 0, 0.9); position: relative;
-        }
-
-        .module-title {
-            position: absolute; top: -10px; left: 10px;
-            background: var(--dark-bg); padding: 0 5px;
-            font-size: 0.8rem; text-transform: uppercase;
-        }
-
-        .meter-container { height: 12px; background: #111; border: 1px solid #333; margin: 10px 0; overflow: hidden; }
+        :root { --neon-green: #39ff14; --dark-bg: #050505; --lime-fire: #ccff00; --alert-red: #ff003c; }
+        body { background-color: var(--dark-bg); color: var(--neon-green); font-family: 'Courier New', monospace; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        .header { width: 100%; max-width: 600px; border: 1px solid var(--neon-green); padding: 10px; text-align: center; margin-bottom: 15px; box-shadow: 0 0 10px rgba(57, 255, 20, 0.3); }
+        .module { border: 1px solid var(--neon-green); padding: 15px; background: rgba(0, 0, 0, 0.9); position: relative; width: 100%; max-width: 570px; margin-bottom: 15px; box-sizing: border-box; }
+        .module-title { position: absolute; top: -10px; left: 10px; background: var(--dark-bg); padding: 0 5px; font-size: 0.8rem; text-transform: uppercase; }
+        .meter-container { height: 12px; background: #111; border: 1px solid #333; margin: 10px 0; overflow: hidden; position: relative; }
         .meter-fill { height: 100%; width: 0%; background: var(--neon-green); transition: width 0.05s linear; }
-
         .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-
-        button {
-            background: transparent; border: 1px solid var(--neon-green);
-            color: var(--neon-green); padding: 10px; cursor: pointer;
-            text-transform: uppercase; font-weight: bold; flex-grow: 1; font-size: 0.75rem;
-        }
-
-        button.active { background: var(--neon-green); color: var(--dark-bg); }
-        button.muted { border-color: var(--alert-red); color: var(--alert-red); }
-        button.live { background: var(--alert-red); color: white; border-color: var(--alert-red); box-shadow: 0 0 10px var(--alert-red); }
-
-        input[type="range"] { width: 100%; accent-color: var(--neon-green); margin: 5px 0; }
-
-        .transport-bar { background: #111; padding: 10px; margin-top: 10px; border: 1px dashed var(--neon-green); }
-        .track-info { font-size: 0.8rem; margin-bottom: 5px; color: var(--lime-fire); height: 1.2rem; overflow: hidden; }
-
-        .track-slot {
-            display: flex; align-items: center; justify-content: space-between;
-            margin: 5px 0; padding: 8px; border: 1px solid #222; font-size: 0.75rem;
-            background: rgba(20,20,20,0.5);
-        }
-
-        .time-display { display: flex; justify-content: space-between; font-size: 0.7rem; margin-top: 2px; }
+        button { background: transparent; border: 1px solid var(--neon-green); color: var(--neon-green); padding: 12px; cursor: pointer; text-transform: uppercase; font-weight: bold; flex: 1; font-size: 0.75rem; min-width: 120px; }
+        button.active { background: var(--neon-green); color: #000; }
+        button.live { background: var(--alert-red); color: #fff; border-color: var(--alert-red); }
+        input[type="range"] { width: 100%; accent-color: var(--neon-green); margin: 10px 0; }
+        .track-slot { display: flex; align-items: center; justify-content: space-between; margin: 5px 0; padding: 8px; border: 1px solid #222; font-size: 0.75rem; background: rgba(20,20,20,0.5); }
+        .transport-info { font-size: 0.7rem; color: var(--lime-fire); margin-bottom: 5px; }
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>X-DYNAMIC // COMMAND_CENTER</h1>
-        <div id="status-display">ENGINE: OFFLINE</div>
+        <h1>X-DYNAMIC // BROADCAST_HUB</h1>
+        <div id="status-display">STATUS: STANDBY</div>
     </div>
 
-    <div class="hud-container">
-        <!-- MIC MODULE -->
-        <div class="module">
-            <div class="module-title">Voice Link</div>
-            <div class="meter-container"><div id="mic-meter" class="meter-fill"></div></div>
-            <div class="controls">
-                <button id="start-btn">Init Engine</button>
-                <button id="mic-mute-btn" class="muted">MIC: MUTED</button>
-                <button id="duck-toggle">Auto-Duck: OFF</button>
-            </div>
-            <input type="range" id="mic-gain" min="0" max="4" step="0.1" value="1">
+    <!-- PERSISTENCE CONTROLS -->
+    <div class="module">
+        <div class="module-title">Engine Control</div>
+        <div class="controls">
+            <button id="start-btn">1. Start Engine</button>
+            <button id="persist-btn">2. Lock Background</button>
         </div>
+        <p style="font-size: 0.6rem; margin-top: 10px; color: #666;">Note: 'Lock Background' creates a media notification to prevent Android sleep.</p>
+    </div>
 
-        <!-- MASTER PLAYER MODULE -->
-        <div class="module">
-            <div class="module-title">Media Transport</div>
-            <div class="meter-container"><div id="music-meter" class="meter-fill"></div></div>
-            
-            <div class="transport-bar">
-                <div id="current-track-name" class="track-info">NO TRACK LOADED</div>
-                <input type="range" id="seek-bar" value="0" min="0" max="100" step="0.1">
-                <div class="time-display">
-                    <span id="time-curr">0:00</span>
-                    <span id="time-total">0:00</span>
-                </div>
-                
-                <div class="controls">
-                    <button id="prev-btn">Prev</button>
-                    <button id="play-pause-btn">Play</button>
-                    <button id="next-btn">Next</button>
-                    <button id="loop-btn">Loop: OFF</button>
-                </div>
-            </div>
-
-            <div class="controls">
-                <button id="load-trigger-btn">Load Audio Tracks (+)</button>
-            </div>
-            <input type="file" id="file-input" class="hidden" accept="audio/*" multiple>
-            
-            <div id="track-list" style="margin-top:10px; max-height:150px; overflow-y:auto; border-top:1px solid #333;"></div>
-            
-            <div style="margin-top:10px">
-                <label style="font-size:0.7rem">Music Volume</label>
-                <input type="range" id="music-vol" min="0" max="1" step="0.05" value="0.5">
-            </div>
+    <!-- AUDIO CONTROLS -->
+    <div class="module">
+        <div class="module-title">Input: Android Mic</div>
+        <div class="meter-container"><div id="mic-meter" class="meter-fill"></div></div>
+        <div class="controls">
+            <button id="mic-mute-btn" style="color: var(--alert-red); border-color: var(--alert-red);">MIC: MUTED</button>
+            <button id="duck-toggle">Auto-Duck: OFF</button>
         </div>
+        <input type="range" id="mic-gain" min="0" max="4" step="0.1" value="1">
+    </div>
 
-        <!-- MASTER BUS -->
-        <div class="module" style="border-color: var(--lime-fire);">
-            <div class="module-title" style="color: var(--lime-fire);">Master Out Feed</div>
-            <div class="meter-container"><div id="master-meter" class="meter-fill" style="background: var(--lime-fire);"></div></div>
+    <!-- MEDIA PLAYER -->
+    <div class="module">
+        <div class="module-title">Source: Media Player</div>
+        <div class="meter-container"><div id="music-meter" class="meter-fill" style="background: var(--lime-fire);"></div></div>
+        <div id="current-track" class="transport-info">NO TRACK SELECTED</div>
+        <input type="range" id="seek-bar" value="0" step="0.1">
+        <div class="controls">
+            <button id="play-pause">Play/Pause</button>
+            <button onclick="document.getElementById('file-input').click()">Load Tracks (+)</button>
         </div>
+        <input type="file" id="file-input" class="hidden" accept="audio/*" multiple>
+        <div id="track-list" style="max-height: 120px; overflow-y: auto; margin-top: 10px; border-top: 1px solid #333;"></div>
+        <input type="range" id="music-vol" min="0" max="1" step="0.05" value="0.5">
     </div>
 
     <script>
-        let audioCtx, micNode, micGainNode, musicGainNode, masterDest;
-        let analyserMic, analyserMusic, analyserMaster;
-        let isMicMuted = true, isDucking = false, isLooping = false;
+        let audioCtx, micNode, micGain, musicGain, masterDest, audioSource;
+        let analyserMic, analyserMusic;
+        let isMuted = true, isDucking = false, playlist = [], currentIdx = -1;
         
-        let playlist = [];
-        let currentIndex = -1;
+        // Track the current playback promise to prevent AbortErrors
+        let playPromise = null;
+
         const audio = new Audio();
         audio.crossOrigin = "anonymous";
-        let audioSource = null;
 
-        const startBtn = document.getElementById('start-btn');
-        const micMuteBtn = document.getElementById('mic-mute-btn');
-        const duckToggle = document.getElementById('duck-toggle');
-        const playPauseBtn = document.getElementById('play-pause-btn');
-        const loopBtn = document.getElementById('loop-btn');
-        const seekBar = document.getElementById('seek-bar');
-        const trackNameDisplay = document.getElementById('current-track-name');
-        const loadBtn = document.getElementById('load-trigger-btn');
-        const fileInput = document.getElementById('file-input');
-
-        async function init() {
+        // --- CORE ENGINE ---
+        async function initEngine() {
             try {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -167,67 +86,94 @@
                 });
                 
                 micNode = audioCtx.createMediaStreamSource(stream);
-                micGainNode = audioCtx.createGain();
-                musicGainNode = audioCtx.createGain();
+                micGain = audioCtx.createGain();
+                musicGain = audioCtx.createGain();
                 masterDest = audioCtx.createMediaStreamDestination();
                 
                 analyserMic = audioCtx.createAnalyser();
                 analyserMusic = audioCtx.createAnalyser();
-                analyserMaster = audioCtx.createAnalyser();
-
-                micNode.connect(analyserMic);
-                micNode.connect(micGainNode);
-                micGainNode.connect(masterDest);
-                micGainNode.connect(analyserMaster);
-                micGainNode.gain.value = 0;
-
-                musicGainNode.connect(masterDest);
-                musicGainNode.connect(analyserMusic);
-                musicGainNode.connect(analyserMaster);
-
-                audioSource = audioCtx.createMediaElementSource(audio);
-                audioSource.connect(musicGainNode);
-
-                startBtn.classList.add('active');
-                startBtn.innerText = "ONLINE";
-                document.getElementById('status-display').innerText = "ENGINE: ACTIVE";
                 
-                render();
-            } catch (e) { alert("Engine Init Failed. Ensure Mic Access."); }
+                micNode.connect(analyserMic);
+                micNode.connect(micGain).connect(masterDest);
+                micGain.gain.value = 0;
+
+                musicGain.connect(analyserMusic).connect(masterDest);
+                
+                audioSource = audioCtx.createMediaElementSource(audio);
+                audioSource.connect(musicGain);
+
+                document.getElementById('start-btn').classList.add('active');
+                document.getElementById('status-display').innerText = "STATUS: ONLINE";
+                
+                requestAnimationFrame(render);
+                setupMediaSession();
+            } catch (err) { 
+                console.error(err);
+                alert("Mic Permission Denied or Not Secure Context"); 
+            }
+        }
+
+        function setupMediaSession() {
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: 'X-DYNAMIC Broadcast',
+                    artist: 'XRPMan System',
+                    album: 'Live Stream Audio'
+                });
+                navigator.mediaSession.setActionHandler('play', safePlay);
+                navigator.mediaSession.setActionHandler('pause', safePause);
+            }
+        }
+
+        async function safePlay() {
+            if (!audio.src) return;
+            if (audioCtx && audioCtx.state === 'suspended') {
+                await audioCtx.resume();
+            }
+            
+            // Wait for any existing play request to resolve before starting a new one
+            if (playPromise) {
+                try { await playPromise; } catch (e) {}
+            }
+            
+            try {
+                playPromise = audio.play();
+                await playPromise;
+                playPromise = null;
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error("Playback failed:", err);
+                }
+            }
+        }
+
+        async function safePause() {
+            // Wait for any existing play request to resolve before pausing
+            if (playPromise) {
+                try { await playPromise; } catch (e) {}
+            }
+            audio.pause();
         }
 
         function render() {
-            const update = () => {
-                drawMeter(analyserMic, 'mic-meter');
-                drawMeter(analyserMusic, 'music-meter');
-                drawMeter(analyserMaster, 'master-meter');
-                
-                if (!audio.paused && audio.duration) {
-                    seekBar.value = (audio.currentTime / audio.duration) * 100;
-                    document.getElementById('time-curr').innerText = formatTime(audio.currentTime);
-                    document.getElementById('time-total').innerText = formatTime(audio.duration);
-                }
-
-                if (isDucking && !isMicMuted && analyserMic) {
-                    const data = new Uint8Array(analyserMic.frequencyBinCount);
-                    analyserMic.getByteFrequencyData(data);
-                    const vol = data.reduce((a, b) => a + b) / data.length;
-                    const targetGain = vol > 25 ? 0.1 : document.getElementById('music-vol').value;
-                    musicGainNode.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 0.2);
-                }
-                requestAnimationFrame(update);
-            };
-            update();
+            updateMeter(analyserMic, 'mic-meter');
+            updateMeter(analyserMusic, 'music-meter');
+            
+            if (audio.duration && !isNaN(audio.duration)) {
+                document.getElementById('seek-bar').value = (audio.currentTime / audio.duration) * 100;
+            }
+            
+            if (isDucking && !isMuted && micGain) {
+                const data = new Uint8Array(analyserMic.frequencyBinCount);
+                analyserMic.getByteFrequencyData(data);
+                const vol = data.reduce((a, b) => a + b) / data.length;
+                const targetVol = vol > 20 ? 0.1 : parseFloat(document.getElementById('music-vol').value);
+                musicGain.gain.setTargetAtTime(targetVol, audioCtx.currentTime, 0.15);
+            }
+            requestAnimationFrame(render);
         }
 
-        function formatTime(secs) {
-            if (isNaN(secs)) return "0:00";
-            let m = Math.floor(secs / 60);
-            let s = Math.floor(secs % 60);
-            return `${m}:${s < 10 ? '0' : ''}${s}`;
-        }
-
-        function drawMeter(analyser, id) {
+        function updateMeter(analyser, id) {
             if (!analyser) return;
             const data = new Uint8Array(analyser.frequencyBinCount);
             analyser.getByteFrequencyData(data);
@@ -235,110 +181,89 @@
             document.getElementById(id).style.width = Math.min(avg * 2.5, 100) + "%";
         }
 
-        // Exposed globally for the HTML buttons
-        window.loadTrack = function(index) {
-            if (index < 0 || index >= playlist.length) return;
-            if (!audioCtx) { alert("Init Engine First!"); return; }
-            
-            currentIndex = index;
-            audio.src = playlist[currentIndex].url;
-            audio.load(); // Forces Android browsers to recognize the new source
-            trackNameDisplay.innerText = playlist[currentIndex].name;
-            audio.play().catch(e => console.log("Play interrupted"));
-            playPauseBtn.innerText = "PAUSE";
-            updatePlaylistUI();
-        };
-
-        playPauseBtn.onclick = () => {
-            if (!audio.src) return;
-            if (audio.paused) { audio.play(); playPauseBtn.innerText = "PAUSE"; }
-            else { audio.pause(); playPauseBtn.innerText = "PLAY"; }
-        };
-
-        document.getElementById('next-btn').onclick = () => {
-            if (playlist.length === 0) return;
-            let next = (currentIndex + 1) % playlist.length;
-            window.loadTrack(next);
-        };
-
-        document.getElementById('prev-btn').onclick = () => {
-            if (playlist.length === 0) return;
-            let prev = (currentIndex - 1 + playlist.length) % playlist.length;
-            window.loadTrack(prev);
-        };
-
-        loopBtn.onclick = () => {
-            isLooping = !isLooping;
-            audio.loop = isLooping;
-            loopBtn.innerText = isLooping ? "Loop: ON" : "Loop: OFF";
-            loopBtn.classList.toggle('active');
-        };
-
-        seekBar.oninput = () => {
-            if (audio.duration) {
-                audio.currentTime = (seekBar.value / 100) * audio.duration;
+        // --- CONTROLS ---
+        document.getElementById('start-btn').onclick = async () => {
+            if (audioCtx) {
+                await audioCtx.resume();
+            } else {
+                await initEngine();
             }
         };
 
-        audio.onended = () => {
-            if (!isLooping) document.getElementById('next-btn').click();
+        document.getElementById('persist-btn').onclick = async () => {
+            // WakeLock (CPU)
+            if ('wakeLock' in navigator) {
+                try { await navigator.wakeLock.request('screen'); } catch (err) {}
+            }
+            // Silent Audio Loop (Keep Process alive)
+            if (audioCtx) {
+                const osc = audioCtx.createOscillator();
+                const silentGain = audioCtx.createGain();
+                silentGain.gain.value = 0.001; 
+                osc.connect(silentGain).connect(audioCtx.destination);
+                osc.start();
+                document.getElementById('persist-btn').innerText = "PROCESS LOCKED";
+                document.getElementById('persist-btn').classList.add('active');
+            }
         };
 
-        loadBtn.onclick = () => fileInput.click();
+        document.getElementById('mic-mute-btn').onclick = () => {
+            if (!micGain) return;
+            isMuted = !isMuted;
+            micGain.gain.setTargetAtTime(isMuted ? 0 : parseFloat(document.getElementById('mic-gain').value), audioCtx.currentTime, 0.05);
+            document.getElementById('mic-mute-btn').innerText = isMuted ? "MIC: MUTED" : "MIC: LIVE";
+            document.getElementById('mic-mute-btn').className = isMuted ? "" : "live";
+        };
 
-        fileInput.onchange = (e) => {
-            if (e.target.files.length === 0) return;
-            
-            const startIdx = playlist.length;
+        document.getElementById('file-input').onchange = (e) => {
             for (let f of e.target.files) {
                 playlist.push({ name: f.name, url: URL.createObjectURL(f) });
             }
-            updatePlaylistUI();
-            
-            // If nothing is playing, load the first item of the new batch
-            if (currentIndex === -1) {
-                window.loadTrack(startIdx);
-            }
+            updatePlaylist();
         };
 
-        function updatePlaylistUI() {
+        function updatePlaylist() {
             const list = document.getElementById('track-list');
             list.innerHTML = "";
-            playlist.forEach((track, i) => {
-                const div = document.createElement('div');
-                div.className = 'track-slot';
-                if(i === currentIndex) div.style.borderColor = "var(--lime-fire)";
-                div.innerHTML = `<span>${track.name.substring(0,25)}</span><button onclick="window.loadTrack(${i})">LOAD</button>`;
-                list.appendChild(div);
+            playlist.forEach((t, i) => {
+                const d = document.createElement('div');
+                d.className = 'track-slot';
+                d.innerHTML = `<span>${t.name.substring(0, 20)}</span><button onclick="load(${i})">LOAD</button>`;
+                list.appendChild(d);
             });
         }
 
-        startBtn.onclick = async () => {
-            if (audioCtx) {
-                if (audioCtx.state === 'suspended') await audioCtx.resume();
-            } else {
-                await init();
+        window.load = async (i) => {
+            currentIdx = i;
+            audio.src = playlist[i].url;
+            await safePlay();
+            document.getElementById('current-track').innerText = playlist[i].name;
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata.title = playlist[i].name;
             }
         };
 
-        micMuteBtn.onclick = () => {
-            if (!micGainNode) return;
-            isMicMuted = !isMicMuted;
-            micGainNode.gain.setTargetAtTime(isMicMuted ? 0 : document.getElementById('mic-gain').value, audioCtx.currentTime, 0.05);
-            micMuteBtn.innerText = isMicMuted ? "MIC: MUTED" : "MIC: LIVE";
-            micMuteBtn.className = isMicMuted ? "muted" : "live";
+        document.getElementById('play-pause').onclick = () => {
+            if (audio.paused) safePlay();
+            else safePause();
         };
 
-        document.getElementById('mic-gain').oninput = (e) => { 
-            if(!isMicMuted && micGainNode) micGainNode.gain.value = e.target.value; 
+        document.getElementById('seek-bar').oninput = (e) => {
+            if (audio.duration) {
+                audio.currentTime = (parseFloat(e.target.value) / 100) * audio.duration;
+            }
         };
-        document.getElementById('music-vol').oninput = (e) => { 
-            if(musicGainNode) musicGainNode.gain.value = e.target.value; 
+
+        document.getElementById('music-vol').oninput = (e) => {
+            if (musicGain) {
+                musicGain.gain.setTargetAtTime(parseFloat(e.target.value), audioCtx.currentTime, 0.05);
+            }
         };
-        duckToggle.onclick = () => { 
-            isDucking = !isDucking; 
-            duckToggle.classList.toggle('active'); 
-            duckToggle.innerText = isDucking ? "Auto-Duck: ON" : "Auto-Duck: OFF"; 
+
+        document.getElementById('duck-toggle').onclick = () => {
+            isDucking = !isDucking;
+            document.getElementById('duck-toggle').classList.toggle('active');
+            document.getElementById('duck-toggle').innerText = isDucking ? "Auto-Duck: ON" : "Auto-Duck: OFF";
         };
     </script>
 </body>

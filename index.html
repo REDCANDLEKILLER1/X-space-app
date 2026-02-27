@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X-DYNAMIC // HUD</title>
+    <style>
+        :root {
+            --neon-green: #39ff14;
+            --dark-bg: #050505;
+            --lime-fire: #ccff00;
+            --border-glow: 0 0 10px rgba(57, 255, 20, 0.5);
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--neon-green);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* Scanline Overlay */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 5;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        .header {
+            width: 100%;
+            max-width: 600px;
+            border: 1px solid var(--neon-green);
+            padding: 10px;
+            text-align: center;
+            box-shadow: var(--border-glow);
+            margin-bottom: 20px;
+        }
+
+        .hud-container {
+            width: 100%;
+            max-width: 600px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .module {
+            border: 1px solid var(--neon-green);
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.9);
+            position: relative;
+            z-index: 10;
+        }
+
+        .module-title {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background: var(--dark-bg);
+            padding: 0 5px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        .meter-container {
+            height: 20px;
+            background: #111;
+            border: 1px solid #333;
+            margin: 10px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .meter-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--neon-green);
+            transition: width 0.05s linear;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            padding: 12px 15px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+            flex-grow: 1;
+            font-size: 0.9rem;
+        }
+
+        button:active {
+            background: var(--neon-green);
+            color: var(--dark-bg);
+        }
+
+        button.active {
+            background: var(--lime-fire);
+            color: var(--dark-bg);
+            box-shadow: 0 0 15px var(--lime-fire);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--neon-green);
+            margin: 10px 0;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            background: #ff4444;
+        }
+
+        .status-active { background: var(--neon-green); box-shadow: 0 0 5px var(--neon-green); }
+
+        .track-slot {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 8px;
+            border: 1px solid #222;
+            background: #0a0a0a;
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>X-DYNAMIC // HUD v2.0</h1>
+        <div>SYSTEM: <span id="sys-status" class="status-dot"></span> <span id="status-text">LOCKED</span></div>
+    </div>
+
+    <div class="hud-container">
+        <!-- MASTER MIC MODULE -->
+        <div class="module">
+            <div class="module-title">Input: Physical Mic</div>
+            <div class="meter-container"><div id="mic-meter" class="meter-fill"></div></div>
+            <div class="controls">
+                <button id="start-btn">Unlock Audio Engine</button>
+                <button id="duck-toggle">Auto-Duck: OFF</button>
+            </div>
+            <div style="margin-top:10px">
+                <label>Mic Gain (Boost)</label>
+                <input type="range" id="mic-gain" min="0" max="4" step="0.1" value="1">
+            </div>
+        </div>
+
+        <!-- SOUNDBOARD MODULE -->
+        <div class="module">
+            <div class="module-title">Soundboard / Music</div>
+            <div class="meter-container"><div id="music-meter" class="meter-fill"></div></div>
+            
+            <input type="file" id="file-input" class="hidden" accept="audio/*" multiple>
+            <button onclick="document.getElementById('file-input').click()" style="width:100%; margin-bottom:10px;">Load Tracks (+)</button>
+
+            <div id="track-list"></div>
+
+            <div style="margin-top:10px">
+                <label>Music Volume</label>
+                <input type="range" id="music-vol" min="0" max="1" step="0.05" value="0.5">
+            </div>
+        </div>
+
+        <!-- MASTER OUTPUT -->
+        <div class="module">
+            <div class="module-title">Master Out (Mixed)</div>
+            <div class="meter-container"><div id="master-meter" class="meter-fill" style="background: var(--lime-fire);"></div></div>
+            <p id="debug-info" style="font-size:0.6rem; color:#444;">Ready for initialization...</p>
+        </div>
+    </div>
+
+    <script>
+        let audioCtx;
+        let micNode, micGainNode;
+        let musicGainNode;
+        let masterDest;
+        let analyserMic, analyserMusic, analyserMaster;
+        let isDucking = false;
+        let activeAudioElement = null;
+
+        const startBtn = document.getElementById('start-btn');
+        const duckToggle = document.getElementById('duck-toggle');
+        const fileInput = document.getElementById('file-input');
+        const trackList = document.getElementById('track-list');
+        const debugInfo = document.getElementById('debug-info');
+
+        async function initAudio() {
+            try {
+                // Ensure context is created on user gesture
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                if (audioCtx.state === 'suspended') {
+                    await audioCtx.resume();
+                }
+
+                // Request Permissions
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false
+                    } 
+                });
+
+                // Nodes Setup
+                micNode = audioCtx.createMediaStreamSource(stream);
+                micGainNode = audioCtx.createGain();
+                musicGainNode = audioCtx.createGain();
+                
+                analyserMic = audioCtx.createAnalyser();
+                analyserMusic = audioCtx.createAnalyser();
+                
+                masterDest = audioCtx.createMediaStreamDestination();
+
+                // Routing
+                micNode.connect(micGainNode).connect(analyserMic).connect(masterDest);
+                musicGainNode.connect(analyserMusic).connect(masterDest);
+
+                // HUD Feedback
+                startBtn.classList.add('active');
+                startBtn.innerText = "SYSTEM LIVE";
+                document.getElementById('sys-status').classList.add('status-active');
+                document.getElementById('status-text').innerText = "ONLINE";
+                debugInfo.innerText = "Audio stream successfully routed.";
+
+                updateMeters();
+                setupDucking();
+                
+                // Wake Lock for Android
+                if ('wakeLock' in navigator) {
+                    try { await navigator.wakeLock.request('screen'); } catch (err) {}
+                }
+
+            } catch (err) {
+                console.error(err);
+                debugInfo.innerText = "ERROR: " + err.message;
+                alert("Please ensure you are opening this via a browser (Chrome/Edge/Brave) and grant Mic permissions.");
+            }
+        }
+
+        function setupDucking() {
+            const data = new Uint8Array(analyserMic.frequencyBinCount);
+            const check = () => {
+                if (!isDucking || !analyserMic) { requestAnimationFrame(check); return; }
+                
+                analyserMic.getByteFrequencyData(data);
+                let volume = data.reduce((a, b) => a + b) / data.length;
+
+                // Sensitivity threshold
+                if (volume > 25) { 
+                    musicGainNode.gain.setTargetAtTime(0.15, audioCtx.currentTime, 0.1);
+                } else {
+                    musicGainNode.gain.setTargetAtTime(document.getElementById('music-vol').value, audioCtx.currentTime, 0.4);
+                }
+                requestAnimationFrame(check);
+            };
+            check();
+        }
+
+        function updateMeters() {
+            const draw = () => {
+                if(analyserMic) updateMeter(analyserMic, 'mic-meter');
+                if(analyserMusic) updateMeter(analyserMusic, 'music-meter');
+                if(analyserMic || analyserMusic) updateMeter(analyserMic, 'master-meter');
+                requestAnimationFrame(draw);
+            };
+            draw();
+        }
+
+        function updateMeter(analyser, elementId) {
+            const data = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(data);
+            let avg = data.reduce((a, b) => a + b) / data.length;
+            document.getElementById(elementId).style.width = Math.min(avg * 2.5, 100) + "%";
+        }
+
+        // --- Handlers ---
+        startBtn.onclick = initAudio;
+
+        duckToggle.onclick = () => {
+            isDucking = !isDucking;
+            duckToggle.innerText = isDucking ? "Auto-Duck: ON" : "Auto-Duck: OFF";
+            duckToggle.classList.toggle('active');
+        };
+
+        document.getElementById('mic-gain').oninput = (e) => {
+            if (micGainNode) micGainNode.gain.value = e.target.value;
+        };
+
+        document.getElementById('music-vol').oninput = (e) => {
+            if (musicGainNode) musicGainNode.gain.value = e.target.value;
+        };
+
+        fileInput.onchange = (e) => {
+            for (let file of e.target.files) {
+                const url = URL.createObjectURL(file);
+                const div = document.createElement('div');
+                div.className = 'track-slot';
+                div.innerHTML = `<span>${file.name.substring(0, 15)}</span><button onclick="playTrack('${url}', this)">PLAY</button>`;
+                trackList.appendChild(div);
+            }
+        };
+
+        function playTrack(url, btn) {
+            if (!audioCtx) return alert("Unlock Audio Engine first.");
+            
+            if (activeAudioElement) {
+                activeAudioElement.pause();
+                document.querySelectorAll('.track-slot button').forEach(b => b.innerText = "PLAY");
+            }
+
+            const audio = new Audio(url);
+            const source = audioCtx.createMediaElementSource(audio);
+            source.connect(musicGainNode);
+            audio.play();
+            activeAudioElement = audio;
+            btn.innerText = "STOP";
+
+            btn.onclick = () => {
+                audio.pause();
+                btn.innerText = "PLAY";
+                activeAudioElement = null;
+                btn.onclick = () => playTrack(url, btn);
+            };
+        }
+    </script>
+</body>
+</html>

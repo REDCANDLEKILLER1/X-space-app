@@ -2,187 +2,891 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>X-DYNAMIC HUD // PWA</title>
-    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlgtRFlOQU1JQyIsCiAgInNob3J0X25hbWUiOiAiWC1EWU4iLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzA1MDUwNSIsCiAgInRoZW1lX2NvbG9yIjogIzM5ZmYxNCIKfQ==">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>X-DYNAMIC // BROADCAST MIXER v2.0</title>
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiWC1EWU5BTUlDIEJyb2FkY2FzdCIsInNob3J0X25hbWUiOiJYLURZTiIsInN0YXJ0X3VybCI6Ii4iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjMDMwMzAzIiwidGhlbWVfY29sb3IiOiIjMDBGRjAwIn0=">
+    <meta name="theme-color" content="#00FF00">
     <style>
-        :root { --neon-green: #39ff14; --dark-bg: #050505; --lime-fire: #ccff00; --alert-red: #ff003c; }
-        body { background-color: var(--dark-bg); color: var(--neon-green); font-family: 'Courier New', monospace; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-        .header { width: 100%; max-width: 600px; border: 1px solid var(--neon-green); padding: 10px; text-align: center; margin-bottom: 15px; box-shadow: 0 0 10px rgba(57, 255, 20, 0.3); }
-        .module { border: 1px solid var(--neon-green); padding: 15px; background: rgba(0, 0, 0, 0.9); position: relative; width: 100%; max-width: 570px; margin-bottom: 15px; box-sizing: border-box; }
-        .module-title { position: absolute; top: -10px; left: 10px; background: var(--dark-bg); padding: 0 5px; font-size: 0.8rem; text-transform: uppercase; }
-        .meter-container { height: 12px; background: #111; border: 1px solid #333; margin: 10px 0; overflow: hidden; position: relative; }
-        .meter-fill { height: 100%; width: 0%; background: var(--neon-green); transition: width 0.05s linear; }
-        .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-        button { background: transparent; border: 1px solid var(--neon-green); color: var(--neon-green); padding: 12px; cursor: pointer; text-transform: uppercase; font-weight: bold; flex: 1; font-size: 0.75rem; min-width: 120px; }
-        button.active { background: var(--neon-green); color: #000; }
-        button.live { background: var(--alert-red); color: #fff; border-color: var(--alert-red); }
-        input[type="range"] { width: 100%; accent-color: var(--neon-green); margin: 10px 0; }
-        .track-slot { display: flex; align-items: center; justify-content: space-between; margin: 5px 0; padding: 8px; border: 1px solid #222; font-size: 0.75rem; background: rgba(20,20,20,0.5); }
-        .transport-info { font-size: 0.7rem; color: var(--lime-fire); margin-bottom: 5px; }
-        .hidden { display: none; }
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --green: #00FF00;
+            --green-dim: #00aa00;
+            --green-glow: rgba(0, 255, 0, 0.15);
+            --green-ghost: rgba(0, 255, 0, 0.05);
+            --lime: #CCFF00;
+            --red: #FF003C;
+            --red-glow: rgba(255, 0, 60, 0.3);
+            --amber: #FFB800;
+            --cyan: #00FFCC;
+            --bg: #030303;
+            --surface: #0a0a0a;
+            --border: #1a1a1a;
+            --border-hi: #2a2a2a;
+            --text-dim: #555;
+        }
+
+        html { font-size: 14px; }
+
+        body {
+            background: var(--bg);
+            color: var(--green);
+            font-family: 'Share Tech Mono', 'Courier New', monospace;
+            min-height: 100vh;
+            padding: 0;
+            overflow-x: hidden;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* === SCANLINE OVERLAY === */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 0, 0.015) 2px,
+                rgba(0, 255, 0, 0.015) 4px
+            );
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* === HEADER === */
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--green);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 0 20px var(--green-glow);
+        }
+
+        .header-brand {
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+        }
+
+        .header-status {
+            font-size: 0.65rem;
+            padding: 3px 8px;
+            border: 1px solid var(--text-dim);
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+
+        .header-status.online {
+            border-color: var(--green);
+            color: var(--green);
+            box-shadow: 0 0 8px var(--green-glow);
+        }
+
+        .header-status.recording {
+            border-color: var(--red);
+            color: var(--red);
+            box-shadow: 0 0 8px var(--red-glow);
+            animation: pulse-rec 1s ease infinite;
+        }
+
+        @keyframes pulse-rec {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* === MAIN CONTENT === */
+        .main {
+            padding: 12px;
+            max-width: 640px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-bottom: 100px;
+        }
+
+        /* === MODULE PANELS === */
+        .module {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--green-dim), transparent);
+            opacity: 0.4;
+        }
+
+        .module-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0, 255, 0, 0.02);
+        }
+
+        .module-label {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--green-dim);
+        }
+
+        .module-badge {
+            font-size: 0.55rem;
+            padding: 2px 6px;
+            border: 1px solid var(--text-dim);
+            color: var(--text-dim);
+            letter-spacing: 1px;
+        }
+
+        .module-badge.active {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .module-badge.live {
+            border-color: var(--red);
+            color: var(--red);
+            animation: pulse-rec 1.2s ease infinite;
+        }
+
+        .module-body {
+            padding: 14px;
+        }
+
+        /* === METERS === */
+        .meter-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+        }
+
+        .meter-label {
+            font-size: 0.55rem;
+            color: var(--text-dim);
+            width: 20px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .meter-track {
+            flex: 1;
+            height: 8px;
+            background: #111;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .meter-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.04s linear;
+            position: relative;
+        }
+
+        .meter-fill.green { background: var(--green); box-shadow: 0 0 6px var(--green-glow); }
+        .meter-fill.lime { background: var(--lime); box-shadow: 0 0 6px rgba(204, 255, 0, 0.3); }
+        .meter-fill.cyan { background: var(--cyan); box-shadow: 0 0 6px rgba(0, 255, 204, 0.3); }
+
+        .meter-db {
+            font-size: 0.5rem;
+            color: var(--text-dim);
+            width: 32px;
+            text-align: left;
+            flex-shrink: 0;
+        }
+
+        /* Stereo meter pair */
+        .meter-stereo {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .meter-stereo .meter-row { margin: 0; }
+
+        /* === BUTTONS === */
+        .btn-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: transparent;
+            border: 1px solid var(--border-hi);
+            color: var(--green-dim);
+            padding: 10px 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.65rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            flex: 1;
+            min-width: 0;
+            transition: all 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn:active { transform: scale(0.96); }
+
+        .btn.on {
+            background: var(--green);
+            color: #000;
+            border-color: var(--green);
+            box-shadow: 0 0 12px var(--green-glow);
+        }
+
+        .btn.danger {
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        .btn.danger.on {
+            background: var(--red);
+            color: #fff;
+            border-color: var(--red);
+            box-shadow: 0 0 12px var(--red-glow);
+        }
+
+        .btn.amber {
+            border-color: var(--amber);
+            color: var(--amber);
+        }
+
+        .btn.amber.on {
+            background: var(--amber);
+            color: #000;
+            border-color: var(--amber);
+        }
+
+        /* === SLIDERS === */
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+        }
+
+        .slider-label {
+            font-size: 0.55rem;
+            color: var(--text-dim);
+            width: 32px;
+            flex-shrink: 0;
+        }
+
+        .slider-val {
+            font-size: 0.55rem;
+            color: var(--green-dim);
+            width: 28px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            flex: 1;
+            height: 4px;
+            background: var(--border);
+            outline: none;
+            border-radius: 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 20px;
+            background: var(--green);
+            border: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 20px;
+            background: var(--green);
+            border: none;
+            cursor: pointer;
+            border-radius: 0;
+        }
+
+        /* === TRACK LIST === */
+        .track-list {
+            max-height: 140px;
+            overflow-y: auto;
+            border-top: 1px solid var(--border);
+            margin-top: 10px;
+        }
+
+        .track-list::-webkit-scrollbar { width: 4px; }
+        .track-list::-webkit-scrollbar-track { background: var(--bg); }
+        .track-list::-webkit-scrollbar-thumb { background: var(--border-hi); }
+
+        .track-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.6rem;
+            transition: background 0.15s;
+        }
+
+        .track-item.active {
+            background: var(--green-ghost);
+            border-left: 2px solid var(--green);
+        }
+
+        .track-item span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            margin-right: 8px;
+        }
+
+        .track-item .btn {
+            flex: 0;
+            padding: 4px 10px;
+            min-width: auto;
+            font-size: 0.55rem;
+        }
+
+        /* === TRANSPORT === */
+        .transport {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            margin: 6px 0;
+        }
+
+        .transport-title {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--lime);
+        }
+
+        .transport-time {
+            flex-shrink: 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* === ENGINE CONTROLS (bottom bar) === */
+        .engine-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--surface);
+            border-top: 1px solid var(--green);
+            padding: 10px 12px;
+            display: flex;
+            gap: 6px;
+            z-index: 100;
+            box-shadow: 0 0 20px var(--green-glow);
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        .engine-bar .btn { font-size: 0.6rem; padding: 12px 6px; }
+
+        /* === NOTES === */
+        .note {
+            font-size: 0.55rem;
+            color: var(--text-dim);
+            padding: 8px 14px;
+            border-top: 1px solid var(--border);
+            line-height: 1.5;
+        }
+
+        /* === RECORDING INDICATOR === */
+        .rec-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--red);
+            margin-right: 4px;
+            animation: pulse-rec 1s ease infinite;
+        }
+
+        /* === HIDDEN === */
+        .hidden { display: none !important; }
+
+        /* === ROUTING INFO PANEL === */
+        .route-info {
+            font-size: 0.55rem;
+            color: var(--text-dim);
+            line-height: 1.6;
+            padding: 10px 14px;
+            border-top: 1px solid var(--border);
+        }
+
+        .route-info strong { color: var(--green-dim); }
+        .route-info code {
+            background: var(--bg);
+            padding: 1px 4px;
+            border: 1px solid var(--border);
+            color: var(--cyan);
+            font-size: 0.55rem;
+        }
     </style>
 </head>
 <body>
 
+    <!-- ===== HEADER ===== -->
     <div class="header">
-        <h1>X-DYNAMIC // BROADCAST_HUB</h1>
-        <div id="status-display">STATUS: STANDBY</div>
+        <div class="header-brand">X-DYNAMIC<span style="color: var(--text-dim);"> // MIX</span></div>
+        <div class="header-status" id="hud-status">OFFLINE</div>
     </div>
 
-    <!-- PERSISTENCE CONTROLS -->
-    <div class="module">
-        <div class="module-title">Engine Control</div>
-        <div class="controls">
-            <button id="start-btn">1. Start Engine</button>
-            <button id="persist-btn">2. Lock Background</button>
+    <!-- ===== MAIN ===== -->
+    <div class="main">
+
+        <!-- MODULE: MASTER OUTPUT -->
+        <div class="module">
+            <div class="module-head">
+                <span class="module-label">Master Output</span>
+                <span class="module-badge" id="master-badge">IDLE</span>
+            </div>
+            <div class="module-body">
+                <div class="meter-stereo">
+                    <div class="meter-row">
+                        <span class="meter-label">L</span>
+                        <div class="meter-track"><div id="master-meter-l" class="meter-fill cyan"></div></div>
+                        <span class="meter-db" id="master-db-l">-∞</span>
+                    </div>
+                    <div class="meter-row">
+                        <span class="meter-label">R</span>
+                        <div class="meter-track"><div id="master-meter-r" class="meter-fill cyan"></div></div>
+                        <span class="meter-db" id="master-db-r">-∞</span>
+                    </div>
+                </div>
+                <div class="slider-row">
+                    <span class="slider-label">MASTER</span>
+                    <input type="range" id="master-vol" min="0" max="1.5" step="0.01" value="1">
+                    <span class="slider-val" id="master-vol-val">100%</span>
+                </div>
+                <div class="btn-row">
+                    <button class="btn" id="btn-monitor">Monitor: OFF</button>
+                    <button class="btn amber" id="btn-record">● REC</button>
+                </div>
+            </div>
+            <div class="note">
+                <strong style="color: var(--cyan);">ROUTING:</strong> Mixed stream → <code>masterDest.stream</code> → Monitor speakers.<br>
+                Enable <strong>Monitor</strong> to hear the mix through your device. Use <strong>REC</strong> to capture the session.
+            </div>
         </div>
-        <p style="font-size: 0.6rem; margin-top: 10px; color: #666;">Note: 'Lock Background' creates a media notification to prevent Android sleep.</p>
-    </div>
 
-    <!-- AUDIO CONTROLS -->
-    <div class="module">
-        <div class="module-title">Input: Android Mic</div>
-        <div class="meter-container"><div id="mic-meter" class="meter-fill"></div></div>
-        <div class="controls">
-            <button id="mic-mute-btn" style="color: var(--alert-red); border-color: var(--alert-red);">MIC: MUTED</button>
-            <button id="duck-toggle">Auto-Duck: OFF</button>
+        <!-- MODULE: MIC INPUT -->
+        <div class="module">
+            <div class="module-head">
+                <span class="module-label">Mic Input</span>
+                <span class="module-badge" id="mic-badge">MUTED</span>
+            </div>
+            <div class="module-body">
+                <div class="meter-row">
+                    <span class="meter-label">IN</span>
+                    <div class="meter-track"><div id="mic-meter" class="meter-fill green"></div></div>
+                    <span class="meter-db" id="mic-db">-∞</span>
+                </div>
+                <div class="btn-row">
+                    <button class="btn danger" id="btn-mic" style="flex: 2;">MIC: MUTED</button>
+                    <button class="btn" id="btn-duck">DUCK: OFF</button>
+                </div>
+                <div class="slider-row">
+                    <span class="slider-label">GAIN</span>
+                    <input type="range" id="mic-gain" min="0" max="4" step="0.05" value="1.0">
+                    <span class="slider-val" id="mic-gain-val">1.0x</span>
+                </div>
+            </div>
         </div>
-        <input type="range" id="mic-gain" min="0" max="4" step="0.1" value="1">
-    </div>
 
-    <!-- MEDIA PLAYER -->
-    <div class="module">
-        <div class="module-title">Source: Media Player</div>
-        <div class="meter-container"><div id="music-meter" class="meter-fill" style="background: var(--lime-fire);"></div></div>
-        <div id="current-track" class="transport-info">NO TRACK SELECTED</div>
-        <input type="range" id="seek-bar" value="0" step="0.1">
-        <div class="controls">
-            <button id="play-pause">Play/Pause</button>
-            <button onclick="document.getElementById('file-input').click()">Load Tracks (+)</button>
+        <!-- MODULE: MEDIA PLAYER -->
+        <div class="module">
+            <div class="module-head">
+                <span class="module-label">Media Player</span>
+                <span class="module-badge" id="player-badge">STOPPED</span>
+            </div>
+            <div class="module-body">
+                <div class="meter-row">
+                    <span class="meter-label">OUT</span>
+                    <div class="meter-track"><div id="music-meter" class="meter-fill lime"></div></div>
+                    <span class="meter-db" id="music-db">-∞</span>
+                </div>
+
+                <div class="transport">
+                    <span class="transport-title" id="track-name">NO TRACK LOADED</span>
+                    <span class="transport-time" id="track-time">0:00 / 0:00</span>
+                </div>
+
+                <div class="slider-row">
+                    <span class="slider-label">SEEK</span>
+                    <input type="range" id="seek-bar" value="0" min="0" max="100" step="0.1">
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn" id="btn-prev">⟨ PREV</button>
+                    <button class="btn" id="btn-play" style="flex: 2;">▶ PLAY</button>
+                    <button class="btn" id="btn-next">NEXT ⟩</button>
+                </div>
+
+                <div class="slider-row">
+                    <span class="slider-label">VOL</span>
+                    <input type="range" id="music-vol" min="0" max="1" step="0.01" value="0.5">
+                    <span class="slider-val" id="music-vol-val">50%</span>
+                </div>
+
+                <div class="btn-row" style="margin-top: 4px;">
+                    <button class="btn" id="btn-load" onclick="document.getElementById('file-input').click()">+ LOAD TRACKS</button>
+                    <button class="btn" id="btn-loop">LOOP: OFF</button>
+                </div>
+
+                <input type="file" id="file-input" class="hidden" accept="audio/*" multiple>
+                <div class="track-list" id="track-list"></div>
+            </div>
         </div>
-        <input type="file" id="file-input" class="hidden" accept="audio/*" multiple>
-        <div id="track-list" style="max-height: 120px; overflow-y: auto; margin-top: 10px; border-top: 1px solid #333;"></div>
-        <input type="range" id="music-vol" min="0" max="1" step="0.05" value="0.5">
+
+        <!-- MODULE: ROUTING INFO -->
+        <div class="module">
+            <div class="module-head">
+                <span class="module-label">X Spaces Routing</span>
+                <span class="module-badge">INFO</span>
+            </div>
+            <div class="route-info">
+                <strong>Same-Browser Setup:</strong><br>
+                1. Open this mixer in a Chrome tab<br>
+                2. Start Engine → enable Monitor<br>
+                3. Open X Spaces in a second Chrome tab<br>
+                4. In X Spaces, go to Settings → Audio and select your output device<br>
+                5. Android: Install <code>AudioRelay</code> or similar to route internal audio as virtual mic input → X picks up the full mix<br>
+                6. Alternative: Use a <strong>3.5mm loopback cable</strong> (headphone out → mic in) for hardware routing<br><br>
+                <strong style="color: var(--amber);">Quick Mode:</strong> Enable Monitor, plug in earbuds, X Spaces mic will pick up room audio + speaker bleed. Works for casual streams.
+            </div>
+        </div>
+
     </div>
 
+    <!-- ===== ENGINE BAR (fixed bottom) ===== -->
+    <div class="engine-bar">
+        <button class="btn" id="btn-engine" style="flex: 2;">▶ START ENGINE</button>
+        <button class="btn" id="btn-lock">LOCK BG</button>
+    </div>
+
+    <!-- ===== AUDIO ENGINE ===== -->
     <script>
-        let audioCtx, micNode, micGain, musicGain, masterDest, audioSource;
-        let analyserMic, analyserMusic;
-        let isMuted = true, isDucking = false, playlist = [], currentIdx = -1;
-        
-        // Track the current playback promise to prevent AbortErrors
+        // === STATE ===
+        let audioCtx = null;
+        let micNode, micGainNode, musicGainNode, masterGainNode;
+        let masterDest, monitorGain;
+        let analyserMic, analyserMusic, analyserMasterL, analyserMasterR;
+        let splitter;
+        let audioEl = new Audio();
+        let audioSource = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+
+        let isMuted = true;
+        let isDucking = false;
+        let isMonitoring = false;
+        let isLooping = false;
+        let isRecording = false;
         let playPromise = null;
 
-        const audio = new Audio();
-        audio.crossOrigin = "anonymous";
+        let playlist = [];
+        let currentIdx = -1;
 
-        // --- CORE ENGINE ---
+        // === DOM REFS ===
+        const $ = id => document.getElementById(id);
+
+        // === FORMAT HELPERS ===
+        function fmt(s) {
+            if (!s || isNaN(s)) return '0:00';
+            const m = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return m + ':' + (sec < 10 ? '0' : '') + sec;
+        }
+
+        function toDb(val) {
+            if (val < 0.001) return '-∞';
+            const db = 20 * Math.log10(val / 255);
+            return db.toFixed(0) + 'dB';
+        }
+
+        // === ENGINE INIT ===
         async function initEngine() {
             try {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } 
+
+                // Get mic
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
                 });
-                
+
+                // Create nodes
                 micNode = audioCtx.createMediaStreamSource(stream);
-                micGain = audioCtx.createGain();
-                musicGain = audioCtx.createGain();
+                micGainNode = audioCtx.createGain();
+                musicGainNode = audioCtx.createGain();
+                masterGainNode = audioCtx.createGain();
+                monitorGain = audioCtx.createGain();
                 masterDest = audioCtx.createMediaStreamDestination();
-                
+
+                // Analysers
                 analyserMic = audioCtx.createAnalyser();
+                analyserMic.fftSize = 512;
                 analyserMusic = audioCtx.createAnalyser();
-                
+                analyserMusic.fftSize = 512;
+
+                // Master stereo analyser
+                splitter = audioCtx.createChannelSplitter(2);
+                analyserMasterL = audioCtx.createAnalyser();
+                analyserMasterL.fftSize = 512;
+                analyserMasterR = audioCtx.createAnalyser();
+                analyserMasterR.fftSize = 512;
+
+                // === ROUTING ===
+                // Mic → micGain → masterGain
                 micNode.connect(analyserMic);
-                micNode.connect(micGain).connect(masterDest);
-                micGain.gain.value = 0;
+                micNode.connect(micGainNode);
+                micGainNode.connect(masterGainNode);
+                micGainNode.gain.value = 0; // start muted
 
-                musicGain.connect(analyserMusic).connect(masterDest);
-                
-                audioSource = audioCtx.createMediaElementSource(audio);
-                audioSource.connect(musicGain);
+                // Audio element → musicGain → masterGain
+                audioSource = audioCtx.createMediaElementSource(audioEl);
+                audioSource.connect(analyserMusic);
+                audioSource.connect(musicGainNode);
+                musicGainNode.connect(masterGainNode);
+                musicGainNode.gain.value = 0.5;
 
-                document.getElementById('start-btn').classList.add('active');
-                document.getElementById('status-display').innerText = "STATUS: ONLINE";
-                
-                requestAnimationFrame(render);
+                // Master → destinations
+                masterGainNode.connect(masterDest);        // mixed stream (for recording / virtual mic)
+                masterGainNode.connect(monitorGain);       // monitor path
+                monitorGain.connect(audioCtx.destination); // speaker output
+                monitorGain.gain.value = 0;                // monitor off by default
+
+                // Master → stereo analyser
+                masterGainNode.connect(splitter);
+                splitter.connect(analyserMasterL, 0);
+                splitter.connect(analyserMasterR, 1);
+
+                // Update UI
+                $('btn-engine').classList.add('on');
+                $('btn-engine').textContent = '■ ENGINE RUNNING';
+                $('hud-status').textContent = 'ONLINE';
+                $('hud-status').classList.add('online');
+                $('master-badge').textContent = 'ACTIVE';
+                $('master-badge').classList.add('active');
+
                 setupMediaSession();
-            } catch (err) { 
-                console.error(err);
-                alert("Mic Permission Denied or Not Secure Context"); 
+                requestAnimationFrame(renderLoop);
+
+            } catch (err) {
+                console.error('Engine init failed:', err);
+                alert('Mic access denied or insecure context.\nMust use HTTPS or localhost.');
             }
         }
 
+        // === MEDIA SESSION ===
         function setupMediaSession() {
-            if ('mediaSession' in navigator) {
-                navigator.mediaSession.metadata = new MediaMetadata({
-                    title: 'X-DYNAMIC Broadcast',
-                    artist: 'XRPMan System',
-                    album: 'Live Stream Audio'
-                });
-                navigator.mediaSession.setActionHandler('play', safePlay);
-                navigator.mediaSession.setActionHandler('pause', safePause);
-            }
+            if (!('mediaSession' in navigator)) return;
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: 'X-DYNAMIC Broadcast',
+                artist: 'XRPMAN',
+                album: 'Live Mix'
+            });
+            navigator.mediaSession.setActionHandler('play', safePlay);
+            navigator.mediaSession.setActionHandler('pause', safePause);
+            navigator.mediaSession.setActionHandler('previoustrack', prevTrack);
+            navigator.mediaSession.setActionHandler('nexttrack', nextTrack);
         }
 
+        // === SAFE PLAYBACK ===
         async function safePlay() {
-            if (!audio.src) return;
-            if (audioCtx && audioCtx.state === 'suspended') {
-                await audioCtx.resume();
-            }
-            
-            // Wait for any existing play request to resolve before starting a new one
-            if (playPromise) {
-                try { await playPromise; } catch (e) {}
-            }
-            
+            if (!audioEl.src) return;
+            if (audioCtx && audioCtx.state === 'suspended') await audioCtx.resume();
+            if (playPromise) { try { await playPromise; } catch(e) {} }
             try {
-                playPromise = audio.play();
+                playPromise = audioEl.play();
                 await playPromise;
                 playPromise = null;
+                $('btn-play').textContent = '⏸ PAUSE';
+                $('player-badge').textContent = 'PLAYING';
+                $('player-badge').classList.add('active');
             } catch (err) {
-                if (err.name !== 'AbortError') {
-                    console.error("Playback failed:", err);
-                }
+                if (err.name !== 'AbortError') console.error('Playback error:', err);
             }
         }
 
         async function safePause() {
-            // Wait for any existing play request to resolve before pausing
-            if (playPromise) {
-                try { await playPromise; } catch (e) {}
-            }
-            audio.pause();
+            if (playPromise) { try { await playPromise; } catch(e) {} }
+            audioEl.pause();
+            $('btn-play').textContent = '▶ PLAY';
+            $('player-badge').textContent = 'PAUSED';
+            $('player-badge').classList.remove('active');
         }
 
-        function render() {
-            updateMeter(analyserMic, 'mic-meter');
-            updateMeter(analyserMusic, 'music-meter');
-            
-            if (audio.duration && !isNaN(audio.duration)) {
-                document.getElementById('seek-bar').value = (audio.currentTime / audio.duration) * 100;
+        // === RENDER LOOP ===
+        function renderLoop() {
+            // Mic meter
+            meterUpdate(analyserMic, 'mic-meter', 'mic-db');
+            // Music meter
+            meterUpdate(analyserMusic, 'music-meter', 'music-db');
+            // Master L/R
+            meterUpdate(analyserMasterL, 'master-meter-l', 'master-db-l');
+            meterUpdate(analyserMasterR, 'master-meter-r', 'master-db-r');
+
+            // Seek bar + time
+            if (audioEl.duration && !isNaN(audioEl.duration)) {
+                $('seek-bar').value = (audioEl.currentTime / audioEl.duration) * 100;
+                $('track-time').textContent = fmt(audioEl.currentTime) + ' / ' + fmt(audioEl.duration);
             }
-            
-            if (isDucking && !isMuted && micGain) {
+
+            // Auto-duck
+            if (isDucking && !isMuted && analyserMic) {
                 const data = new Uint8Array(analyserMic.frequencyBinCount);
                 analyserMic.getByteFrequencyData(data);
-                const vol = data.reduce((a, b) => a + b) / data.length;
-                const targetVol = vol > 20 ? 0.1 : parseFloat(document.getElementById('music-vol').value);
-                musicGain.gain.setTargetAtTime(targetVol, audioCtx.currentTime, 0.15);
+                const avg = data.reduce((a, b) => a + b, 0) / data.length;
+                const targetVol = avg > 20
+                    ? parseFloat($('music-vol').value) * 0.15
+                    : parseFloat($('music-vol').value);
+                musicGainNode.gain.setTargetAtTime(targetVol, audioCtx.currentTime, 0.12);
             }
-            requestAnimationFrame(render);
+
+            requestAnimationFrame(renderLoop);
         }
 
-        function updateMeter(analyser, id) {
+        function meterUpdate(analyser, meterId, dbId) {
             if (!analyser) return;
             const data = new Uint8Array(analyser.frequencyBinCount);
             analyser.getByteFrequencyData(data);
-            const avg = data.reduce((a, b) => a + b) / data.length;
-            document.getElementById(id).style.width = Math.min(avg * 2.5, 100) + "%";
+            const avg = data.reduce((a, b) => a + b, 0) / data.length;
+            $(meterId).style.width = Math.min(avg * 2.5, 100) + '%';
+            $(dbId).textContent = toDb(avg);
         }
 
-        // --- CONTROLS ---
-        document.getElementById('start-btn').onclick = async () => {
+        // === PLAYLIST ===
+        function renderPlaylist() {
+            const el = $('track-list');
+            el.innerHTML = '';
+            playlist.forEach((t, i) => {
+                const item = document.createElement('div');
+                item.className = 'track-item' + (i === currentIdx ? ' active' : '');
+                item.innerHTML = `<span>${i + 1}. ${t.name}</span><button class="btn" onclick="loadTrack(${i})">▶</button>`;
+                el.appendChild(item);
+            });
+        }
+
+        window.loadTrack = async (i) => {
+            currentIdx = i;
+            audioEl.src = playlist[i].url;
+            $('track-name').textContent = playlist[i].name;
+            renderPlaylist();
+            await safePlay();
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: playlist[i].name, artist: 'XRPMAN', album: 'Live Mix'
+                });
+            }
+        };
+
+        function nextTrack() {
+            if (playlist.length === 0) return;
+            const next = (currentIdx + 1) % playlist.length;
+            loadTrack(next);
+        }
+
+        function prevTrack() {
+            if (playlist.length === 0) return;
+            const prev = (currentIdx - 1 + playlist.length) % playlist.length;
+            loadTrack(prev);
+        }
+
+        // Auto-advance
+        audioEl.addEventListener('ended', () => {
+            if (isLooping) {
+                audioEl.currentTime = 0;
+                safePlay();
+            } else if (currentIdx < playlist.length - 1) {
+                nextTrack();
+            } else {
+                $('btn-play').textContent = '▶ PLAY';
+                $('player-badge').textContent = 'STOPPED';
+                $('player-badge').classList.remove('active');
+            }
+        });
+
+        // === RECORDING ===
+        function toggleRecord() {
+            if (!masterDest) return;
+
+            if (!isRecording) {
+                recordedChunks = [];
+                mediaRecorder = new MediaRecorder(masterDest.stream, {
+                    mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+                        ? 'audio/webm;codecs=opus' : 'audio/webm'
+                });
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                    a.download = `xdynamic-mix-${ts}.webm`;
+                    a.click();
+                };
+                mediaRecorder.start(1000);
+                isRecording = true;
+                $('btn-record').classList.add('on');
+                $('btn-record').innerHTML = '<span class="rec-dot"></span> STOP';
+                $('hud-status').textContent = '● REC';
+                $('hud-status').classList.add('recording');
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                $('btn-record').classList.remove('on');
+                $('btn-record').textContent = '● REC';
+                $('hud-status').textContent = 'ONLINE';
+                $('hud-status').classList.remove('recording');
+                $('hud-status').classList.add('online');
+            }
+        }
+
+        // === EVENT BINDINGS ===
+
+        // Engine
+        $('btn-engine').onclick = async () => {
             if (audioCtx) {
                 await audioCtx.resume();
             } else {
@@ -190,81 +894,114 @@
             }
         };
 
-        document.getElementById('persist-btn').onclick = async () => {
-            // WakeLock (CPU)
+        // Background lock
+        $('btn-lock').onclick = async () => {
             if ('wakeLock' in navigator) {
-                try { await navigator.wakeLock.request('screen'); } catch (err) {}
+                try { await navigator.wakeLock.request('screen'); } catch(e) {}
             }
-            // Silent Audio Loop (Keep Process alive)
             if (audioCtx) {
                 const osc = audioCtx.createOscillator();
                 const silentGain = audioCtx.createGain();
-                silentGain.gain.value = 0.001; 
+                silentGain.gain.value = 0.001;
                 osc.connect(silentGain).connect(audioCtx.destination);
                 osc.start();
-                document.getElementById('persist-btn').innerText = "PROCESS LOCKED";
-                document.getElementById('persist-btn').classList.add('active');
             }
+            $('btn-lock').classList.add('on');
+            $('btn-lock').textContent = 'LOCKED';
         };
 
-        document.getElementById('mic-mute-btn').onclick = () => {
-            if (!micGain) return;
+        // Mic mute
+        $('btn-mic').onclick = () => {
+            if (!micGainNode) return;
             isMuted = !isMuted;
-            micGain.gain.setTargetAtTime(isMuted ? 0 : parseFloat(document.getElementById('mic-gain').value), audioCtx.currentTime, 0.05);
-            document.getElementById('mic-mute-btn').innerText = isMuted ? "MIC: MUTED" : "MIC: LIVE";
-            document.getElementById('mic-mute-btn').className = isMuted ? "" : "live";
+            const gainVal = isMuted ? 0 : parseFloat($('mic-gain').value);
+            micGainNode.gain.setTargetAtTime(gainVal, audioCtx.currentTime, 0.05);
+            $('btn-mic').textContent = isMuted ? 'MIC: MUTED' : 'MIC: LIVE';
+            $('btn-mic').classList.toggle('on', !isMuted);
+            $('btn-mic').className = isMuted ? 'btn danger' : 'btn danger on';
+            $('mic-badge').textContent = isMuted ? 'MUTED' : 'LIVE';
+            $('mic-badge').classList.toggle('live', !isMuted);
+            $('mic-badge').classList.remove('active');
         };
 
-        document.getElementById('file-input').onchange = (e) => {
-            for (let f of e.target.files) {
-                playlist.push({ name: f.name, url: URL.createObjectURL(f) });
-            }
-            updatePlaylist();
-        };
-
-        function updatePlaylist() {
-            const list = document.getElementById('track-list');
-            list.innerHTML = "";
-            playlist.forEach((t, i) => {
-                const d = document.createElement('div');
-                d.className = 'track-slot';
-                d.innerHTML = `<span>${t.name.substring(0, 20)}</span><button onclick="load(${i})">LOAD</button>`;
-                list.appendChild(d);
-            });
-        }
-
-        window.load = async (i) => {
-            currentIdx = i;
-            audio.src = playlist[i].url;
-            await safePlay();
-            document.getElementById('current-track').innerText = playlist[i].name;
-            if ('mediaSession' in navigator) {
-                navigator.mediaSession.metadata.title = playlist[i].name;
+        // Mic gain slider
+        $('mic-gain').oninput = (e) => {
+            const v = parseFloat(e.target.value);
+            $('mic-gain-val').textContent = v.toFixed(1) + 'x';
+            if (micGainNode && !isMuted) {
+                micGainNode.gain.setTargetAtTime(v, audioCtx.currentTime, 0.05);
             }
         };
 
-        document.getElementById('play-pause').onclick = () => {
-            if (audio.paused) safePlay();
+        // Auto-duck
+        $('btn-duck').onclick = () => {
+            isDucking = !isDucking;
+            $('btn-duck').classList.toggle('on', isDucking);
+            $('btn-duck').textContent = isDucking ? 'DUCK: ON' : 'DUCK: OFF';
+        };
+
+        // Play/Pause
+        $('btn-play').onclick = () => {
+            if (audioEl.paused) safePlay();
             else safePause();
         };
 
-        document.getElementById('seek-bar').oninput = (e) => {
-            if (audio.duration) {
-                audio.currentTime = (parseFloat(e.target.value) / 100) * audio.duration;
+        // Prev / Next
+        $('btn-prev').onclick = prevTrack;
+        $('btn-next').onclick = nextTrack;
+
+        // Seek
+        $('seek-bar').oninput = (e) => {
+            if (audioEl.duration) {
+                audioEl.currentTime = (parseFloat(e.target.value) / 100) * audioEl.duration;
             }
         };
 
-        document.getElementById('music-vol').oninput = (e) => {
-            if (musicGain) {
-                musicGain.gain.setTargetAtTime(parseFloat(e.target.value), audioCtx.currentTime, 0.05);
+        // Music volume
+        $('music-vol').oninput = (e) => {
+            const v = parseFloat(e.target.value);
+            $('music-vol-val').textContent = Math.round(v * 100) + '%';
+            if (musicGainNode && !isDucking) {
+                musicGainNode.gain.setTargetAtTime(v, audioCtx.currentTime, 0.05);
             }
         };
 
-        document.getElementById('duck-toggle').onclick = () => {
-            isDucking = !isDucking;
-            document.getElementById('duck-toggle').classList.toggle('active');
-            document.getElementById('duck-toggle').innerText = isDucking ? "Auto-Duck: ON" : "Auto-Duck: OFF";
+        // Loop
+        $('btn-loop').onclick = () => {
+            isLooping = !isLooping;
+            $('btn-loop').classList.toggle('on', isLooping);
+            $('btn-loop').textContent = isLooping ? 'LOOP: ON' : 'LOOP: OFF';
         };
+
+        // File input
+        $('file-input').onchange = (e) => {
+            for (const f of e.target.files) {
+                playlist.push({ name: f.name, url: URL.createObjectURL(f) });
+            }
+            renderPlaylist();
+            e.target.value = '';
+        };
+
+        // Monitor
+        $('btn-monitor').onclick = () => {
+            if (!monitorGain) return;
+            isMonitoring = !isMonitoring;
+            monitorGain.gain.setTargetAtTime(isMonitoring ? 1 : 0, audioCtx.currentTime, 0.05);
+            $('btn-monitor').classList.toggle('on', isMonitoring);
+            $('btn-monitor').textContent = isMonitoring ? 'Monitor: ON' : 'Monitor: OFF';
+        };
+
+        // Master volume
+        $('master-vol').oninput = (e) => {
+            const v = parseFloat(e.target.value);
+            $('master-vol-val').textContent = Math.round(v * 100) + '%';
+            if (masterGainNode) {
+                masterGainNode.gain.setTargetAtTime(v, audioCtx.currentTime, 0.05);
+            }
+        };
+
+        // Record
+        $('btn-record').onclick = toggleRecord;
     </script>
 </body>
 </html>
